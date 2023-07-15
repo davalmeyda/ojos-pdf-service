@@ -1,0 +1,33 @@
+name: Despliegue automatizado
+on:
+  push:
+    branches:
+      - main
+jobs:
+  despliegue:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Configurar npm
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16
+
+      - name: Install Dependecias linux
+        run: |
+          sudo apt install openssh-client rsync sshpass -y
+
+      - name: Install Dependencias
+        run: |
+          npm install
+
+      - name: Build
+        run: |
+          npm run build:prod
+
+      - name: Copy Deploy
+        run: |
+          sudo sshpass -p 'Khronos92' rsync -r node_modules root@161.132.38.94:/data -e "ssh -p 32004 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+          cd dist  
+          sudo sshpass -p 'Khronos92' rsync -r . root@161.132.38.94:/data -e "ssh -p 32004 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
