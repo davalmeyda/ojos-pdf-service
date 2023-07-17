@@ -16,7 +16,7 @@ export class PdfServiceController {
 			body.ruta = body.ruta.split('public/')[1];
 		}
 
-		const url = process.env.LARAVEL + '/' + body.ruta;
+		const url = process.env.LARAVEL_URL + '/' + body.ruta;
 
 		const promises = [];
 		body.files.forEach(element => {
