@@ -11,6 +11,12 @@ export class OCRDto {
 	ruta: string;
 }
 
+export class PdfBase64Dto {
+	@IsString()
+	@ApiProperty()
+	archivoBase64: string;
+}
+
 export class ArchivoPDFDto {
 	@IsNotEmpty()
 	@ApiProperty({ type: 'string', format: 'binary' })

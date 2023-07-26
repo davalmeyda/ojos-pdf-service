@@ -3,7 +3,7 @@ import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { readPdfText } from 'pdf-text-reader';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { customResponse } from '../common/response';
-import { ArchivoPDFDto, OCRDto } from '../dtos/ocr.dto';
+import { ArchivoPDFDto, OCRDto, PdfBase64Dto } from '../dtos/ocr.dto';
 import * as fs from 'fs';
 
 @Controller('OCR')
@@ -62,6 +62,21 @@ export class PdfServiceController {
 		return customResponse('pdf', dataDepurada);
 	}
 
+	@Post('convertPDFBase64')
+	@ApiOperation({ summary: 'convert PDF to Text' })
+	async pdfToTextBase64(@Body() body: PdfBase64Dto) {
+		const pathArchivo = __dirname + '/temp/' + Date.now() + '.pdf';
+		const base64Data = body.archivoBase64.replace(/^data:application\/pdf;base64,/, '');
+
+		fs.writeFileSync(pathArchivo, base64Data, 'base64');
+
+		const response = await readPdfText(pathArchivo);
+
+		fs.unlinkSync(pathArchivo);
+
+		return response;
+	}
+
 	@Post('test')
 	@ApiOperation({ summary: 'Subir un archivo pdf para testear el resultado' })
 	@ApiConsumes('multipart/form-data')
@@ -81,10 +96,9 @@ export class PdfServiceController {
 
 		// eliminar el archivo
 		fs.unlinkSync(pathArchivo);
-
-		return customResponse('pdf', {
-			response,
-			dd: {
+		let dd;
+		try {
+			dd = {
 				ruc: ruc.split(':')[1].trim(),
 				serie: serie.split('-')[1].trim(),
 				fecha,
@@ -94,7 +108,14 @@ export class PdfServiceController {
 					.replaceAll(',', '')
 					.replace('S/', '')
 					.trim(),
-			},
+			};
+		} catch (error) {
+			dd = error.message;
+		}
+
+		return customResponse('pdf', {
+			response,
+			dd,
 		});
 	}
 }
