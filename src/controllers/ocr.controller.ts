@@ -12,11 +12,17 @@ export class PdfServiceController {
 	@Post('convertPDF')
 	@ApiOperation({ summary: 'convert PDF to Text' })
 	async pdfToText(@Body() body: OCRDto) {
+		console.log(body);
+
 		if (body.ruta.includes('public')) {
 			body.ruta = body.ruta.split('public/')[1];
 		}
 
+		console.log(body.ruta);
+
 		const url = process.env.LARAVEL_URL + '/' + body.ruta;
+
+		console.log(url);
 
 		const promises = [];
 		body.files.forEach(element => {
