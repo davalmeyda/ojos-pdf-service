@@ -46,6 +46,8 @@ export class PdfServiceController {
 				const fecha = data.find((line: string) => /\d{2}\/\d{2}\/\d{4}/.test(line));
 				const importeTotal = data.find((line: string) => line.includes('Importe Total :'));
 
+				console.log(indexR, rucCliente, ruc, serie, fecha, importeTotal);
+
 				return {
 					rucCliente: rucCliente.split(':')[1].trim(),
 					fileName: element.fileName,
