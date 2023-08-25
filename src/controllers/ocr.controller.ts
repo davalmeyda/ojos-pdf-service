@@ -36,12 +36,22 @@ export class PdfServiceController {
 			try {
 				const data = response[index][0]['lines'];
 
+				console.log(data);
+
 				const rucCliente = data.find((line: string) => line.startsWith(': '));
 				const ruc = data.find((line: string) => line.includes('RUC:'));
 				const serie = data.find((line: string) => line.includes('E001-'));
 				// buscar cualquiera con esta coincidencia exacta dd/mm/yyyy usando regex
 				const fecha = data.find((line: string) => /\d{2}\/\d{2}\/\d{4}/.test(line));
 				const importeTotal = data.find((line: string) => line.includes('Importe Total :'));
+
+				console.log({
+					rucCliente,
+					ruc,
+					serie,
+					fecha,
+					importeTotal,
+				});
 
 				return {
 					rucCliente: rucCliente.split(':')[1].trim(),
