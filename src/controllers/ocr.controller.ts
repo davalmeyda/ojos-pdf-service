@@ -44,6 +44,20 @@ export class PdfServiceController {
 				const fecha = data.find((line: string) => /\d{2}\/\d{2}\/\d{4}/.test(line));
 				const importeTotal = data.find((line: string) => line.includes('Importe Total :'));
 
+				console.log({
+					rucCliente: rucCliente.split(':')[1].trim(),
+					fileName: element.fileName,
+					ruc: ruc.split(':')[1].trim(),
+					serie: serie.split('-')[1].trim(),
+					fecha,
+					importeTotal: importeTotal
+						.split(':')[1]
+						.trim()
+						.replaceAll(',', '')
+						.replace('S/', '')
+						.trim(),
+				});
+
 				return {
 					rucCliente: rucCliente.split(':')[1].trim(),
 					fileName: element.fileName,
