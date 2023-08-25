@@ -36,10 +36,6 @@ export class PdfServiceController {
 			try {
 				const data = response[index][0]['lines'];
 
-				console.log(data);
-
-				// necesito buscar el que inicia con ": "
-
 				const rucCliente = data.find((line: string) => line.startsWith(': '));
 				const ruc = data.find((line: string) => line.includes('RUC:'));
 				const serie = data.find((line: string) => line.includes('E001-'));
