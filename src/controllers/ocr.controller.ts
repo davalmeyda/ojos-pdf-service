@@ -38,15 +38,14 @@ export class PdfServiceController {
 
 				console.log(data);
 
-				const indexR = data.findIndex((line: string) => line.includes('Señor(es) :'));
-				const rucCliente = data[indexR + 1];
+				// necesito buscar el que inicia con ": "
+
+				const rucCliente = data.find((line: string) => line.startsWith(': '));
 				const ruc = data.find((line: string) => line.includes('RUC:'));
 				const serie = data.find((line: string) => line.includes('E001-'));
 				// buscar cualquiera con esta coincidencia exacta dd/mm/yyyy usando regex
 				const fecha = data.find((line: string) => /\d{2}\/\d{2}\/\d{4}/.test(line));
 				const importeTotal = data.find((line: string) => line.includes('Importe Total :'));
-
-				console.log({ indexR, rucCliente, ruc, serie, fecha, importeTotal });
 
 				return {
 					rucCliente: rucCliente.split(':')[1].trim(),
