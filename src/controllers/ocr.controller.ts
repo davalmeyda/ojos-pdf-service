@@ -38,7 +38,7 @@ export class PdfServiceController {
 
 				console.log(data);
 
-				const rucCliente = data.find((line: string) => line.startsWith(': '));
+				// const rucCliente = data.find((line: string) => line.startsWith(': '));
 				const ruc = data.find((line: string) => line.includes('RUC:'));
 				const serie = data.find((line: string) => line.includes('E001-'));
 				// buscar cualquiera con esta coincidencia exacta dd/mm/yyyy usando regex
@@ -46,7 +46,7 @@ export class PdfServiceController {
 				const importeTotal = data.find((line: string) => line.includes('Importe Total :'));
 
 				console.log({
-					rucCliente,
+					// rucCliente,
 					ruc,
 					serie,
 					fecha,
@@ -54,7 +54,8 @@ export class PdfServiceController {
 				});
 
 				return {
-					rucCliente: rucCliente.split(':')[1].trim(),
+					// rucCliente: rucCliente.split(':')[1].trim(),
+					rucCliente: '',
 					fileName: element.fileName,
 					ruc: ruc.split(':')[1].trim(),
 					serie: serie.split('-')[1].trim(),
