@@ -106,7 +106,6 @@ export class PdfServiceController {
 		try {
 			const response = await readPdfText({
 				filePath: pathArchivo,
-				password: body.pass,
 			});
 
 			fs.unlinkSync(pathArchivo);
