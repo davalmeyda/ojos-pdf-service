@@ -1,4 +1,11 @@
-import { Body, Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import {
+	BadRequestException,
+	Body,
+	Controller,
+	Post,
+	UploadedFile,
+	UseInterceptors,
+} from '@nestjs/common';
 import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { readPdfText } from 'pdf-text-reader';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -91,11 +98,28 @@ export class PdfServiceController {
 
 		fs.writeFileSync(pathArchivo, base64Data, 'base64');
 
-		const response = await readPdfText(pathArchivo);
+		const maxIntentos = 3;
+		let intentos = 0;
 
-		fs.unlinkSync(pathArchivo);
+		try {
+			const response = await readPdfText(pathArchivo, true, (fn, reason) => {
+				const pass = body.pass ? body.pass : '123456789';
 
-		return response;
+				if (intentos >= maxIntentos) {
+					throw new Error('Maximo de intentos alcanzado');
+				}
+
+				intentos++;
+
+				fn(pass);
+				return '';
+			});
+
+			fs.unlinkSync(pathArchivo);
+			return response;
+		} catch (error) {
+			throw new BadRequestException('Contraseña incorrecta');
+		}
 	}
 
 	@Post('test')

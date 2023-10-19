@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsNotEmpty, IsString } from 'class-validator';
+import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class OCRDto {
 	@IsArray()
@@ -15,6 +15,11 @@ export class PdfBase64Dto {
 	@IsString()
 	@ApiProperty()
 	archivoBase64: string;
+
+	@IsOptional()
+	@IsString()
+	@ApiProperty()
+	pass?: string;
 }
 
 export class ArchivoPDFDto {
