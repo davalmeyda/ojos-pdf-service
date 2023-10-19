@@ -102,7 +102,7 @@ export class PdfServiceController {
 		let intentos = 0;
 
 		try {
-			const response = await readPdfText(pathArchivo, true, (fn, reason) => {
+			const response = await readPdfText(pathArchivo, false, (fn, reason) => {
 				const pass = body.pass ? body.pass : '123456789';
 
 				if (intentos >= maxIntentos) {
