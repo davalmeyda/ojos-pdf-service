@@ -111,7 +111,6 @@ export class PdfServiceController {
 			fs.unlinkSync(pathArchivo);
 			return response;
 		} catch (error) {
-			console.log(error);
 			throw new BadRequestException('Contraseña incorrecta');
 		}
 	}
