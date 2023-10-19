@@ -34,7 +34,12 @@ export class PdfServiceController {
 		const promises = [];
 		body.files.forEach(element => {
 			const fileUrl = url + '/' + element;
-			promises.push({ fileName: element, promise: readPdfText(fileUrl) });
+			promises.push({
+				fileName: element,
+				promise: readPdfText({
+					url: fileUrl,
+				}),
+			});
 		});
 
 		const response = await Promise.all(promises.map(p => p.promise));
@@ -98,21 +103,10 @@ export class PdfServiceController {
 
 		fs.writeFileSync(pathArchivo, base64Data, 'base64');
 
-		const maxIntentos = 3;
-		let intentos = 0;
-
 		try {
-			const response = await readPdfText(pathArchivo, true, (fn, reason) => {
-				const pass = body.pass ? body.pass : '123456789';
-
-				if (intentos >= maxIntentos) {
-					throw new Error('Maximo de intentos alcanzado');
-				}
-
-				intentos++;
-
-				fn(pass);
-				return '';
+			const response = await readPdfText({
+				filePath: pathArchivo,
+				password: body.pass,
 			});
 
 			fs.unlinkSync(pathArchivo);
@@ -129,7 +123,9 @@ export class PdfServiceController {
 	@ApiBody({ type: ArchivoPDFDto })
 	async pdfTest(@UploadedFile() archivo: Express.Multer.File) {
 		const pathArchivo = archivo.path;
-		const response = await readPdfText(pathArchivo);
+		const response = await readPdfText({
+			filePath: pathArchivo,
+		});
 
 		const data = response[0]['lines'];
 
