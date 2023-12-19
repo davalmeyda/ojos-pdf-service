@@ -12,6 +12,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { customResponse } from '../common/response';
 import { ArchivoPDFDto, OCRDto, PdfBase64Dto } from '../dtos/ocr.dto';
 import * as fs from 'fs';
+import { PDFDocument } from 'pdf-lib';
 
 @Controller('OCR')
 @ApiTags('OCR')
@@ -98,25 +99,69 @@ export class PdfServiceController {
 
 		fs.writeFileSync(pathArchivo, base64Data, 'base64');
 
-		const maxIntentos = 3;
-		let intentos = 0;
-
 		try {
-			const response = await readPdfText(pathArchivo, false, (fn, reason) => {
-				const pass = body.pass ? body.pass : '123456789';
-
-				if (intentos >= maxIntentos) {
-					throw new Error('Maximo de intentos alcanzado');
-				}
-
-				intentos++;
-
-				fn(pass);
-				return '';
-			});
+			const response = await readPdfText(pathArchivo);
 
 			fs.unlinkSync(pathArchivo);
 			return response;
+		} catch (error) {
+			throw new BadRequestException('Contraseña incorrecta');
+		}
+	}
+
+	@Post('convertPDFBase64BCP')
+	@ApiOperation({ summary: 'convert PDF to Text' })
+	async pdfToTextBase64BCP(@Body() body: PdfBase64Dto) {
+		const pathArchivo = __dirname + '/temp/' + Date.now() + '.pdf';
+		const base64Data = body.archivoBase64.replace(/^data:application\/pdf;base64,/, '');
+
+		fs.writeFileSync(pathArchivo, base64Data, 'base64');
+
+		const fileOut = __dirname + '/temp/results-' + Date.now() + '.pdf';
+		await this.cropPdf(pathArchivo, fileOut, {
+			x: 0,
+			y: 0,
+			width: 450,
+			height: 800,
+		});
+		try {
+			const regex = /\d{1,3}(,\d{3})*\.\d{2}/;
+
+			const salidas = await readPdfText(fileOut);
+
+			const respSalida = [];
+			salidas.forEach(element => {
+				const linesWithCurrency = element.lines.filter(line => regex.test(line));
+				respSalida.push(...linesWithCurrency);
+			});
+
+			const total = await readPdfText(pathArchivo);
+			const respTotal = [];
+			total.forEach(element => {
+				const linesWithCurrency = element.lines.filter(line => regex.test(line));
+				respTotal.push(...linesWithCurrency);
+			});
+
+			fs.unlinkSync(pathArchivo);
+			fs.unlinkSync(fileOut);
+
+			// al array total le quito los elementos que estan en el array salida
+			const respTotalFiltrado = respTotal.filter(element => !respSalida.includes(element));
+
+			return {
+				salidas: respSalida.filter(element => {
+					const spaceCount = (element.match(/ /g) || []).length;
+					return spaceCount >= 3;
+				}),
+				ingresos: respTotalFiltrado.filter(element => {
+					const spaceCount = (element.match(/ /g) || []).length;
+					return spaceCount >= 3;
+				}),
+				total: respTotal.filter(element => {
+					const spaceCount = (element.match(/ /g) || []).length;
+					return spaceCount >= 3;
+				}),
+			};
 		} catch (error) {
 			throw new BadRequestException('Contraseña incorrecta');
 		}
@@ -162,5 +207,100 @@ export class PdfServiceController {
 			response,
 			dd,
 		});
+	}
+
+	@Post('test2')
+	@ApiOperation({ summary: 'Subir un archivo pdf para testear el resultado' })
+	@ApiConsumes('multipart/form-data')
+	@UseInterceptors(FileInterceptor('archivo', { dest: __dirname + '/temp' }))
+	@ApiBody({ type: ArchivoPDFDto })
+	async pdfTest2(@UploadedFile() archivo: Express.Multer.File) {
+		const pathArchivo = archivo.path;
+
+		const fileOut = __dirname + '/temp/results-' + Date.now() + '.pdf';
+		await this.cropPdf(pathArchivo, fileOut, {
+			x: 0,
+			y: 0,
+			width: 450,
+			height: 800,
+		});
+
+		const salidas = await readPdfText(fileOut);
+		const regex = /\d{1,3}(,\d{3})*\.\d{2}/;
+
+		const respSalida = [];
+		salidas.forEach(element => {
+			const linesWithCurrency = element.lines.filter(line => regex.test(line));
+			respSalida.push(...linesWithCurrency);
+		});
+
+		const total = await readPdfText(pathArchivo);
+		const respTotal = [];
+		total.forEach(element => {
+			const linesWithCurrency = element.lines.filter(line => regex.test(line));
+			respTotal.push(...linesWithCurrency);
+		});
+
+		// al array total le quito los elementos que estan en el array salida
+		const respTotalFiltrado = respTotal.filter(element => !respSalida.includes(element));
+
+		return {
+			salidas: respSalida.filter(element => {
+				const spaceCount = (element.match(/ /g) || []).length;
+				return spaceCount >= 3;
+			}),
+			ingresos: respTotalFiltrado.filter(element => {
+				const spaceCount = (element.match(/ /g) || []).length;
+				return spaceCount >= 3;
+			}),
+			total: respTotal.filter(element => {
+				const spaceCount = (element.match(/ /g) || []).length;
+				return spaceCount >= 3;
+			}),
+		};
+	}
+
+	async cropPdf(inputFilePath, outputFilePath, cropRect) {
+		// Load your PDFDocument
+		const existingPdfBytes = fs.readFileSync(inputFilePath);
+		const pdfDoc = await PDFDocument.load(existingPdfBytes);
+
+		// Define the crop rectangle
+		const { x, y, width, height } = cropRect;
+
+		// Get the pages of the document
+		const pages = pdfDoc.getPages();
+		pages.forEach(page => {
+			const { width: pageWidth, height: pageHeight } = page.getSize();
+			// Define the position y from the bottom of the page
+			const yPosition = pageHeight - (y + height);
+
+			page.setCropBox(
+				x, // x-coordinate of the bottom-left corner of the cropping area
+				yPosition, // y-coordinate of the bottom-left corner of the cropping area
+				width, // width of the cropping area
+				height, // height of the cropping area
+			);
+		});
+
+		// Serialize the PDFDocument to bytes (a Uint8Array)
+		const pdfBytes = await pdfDoc.save();
+		fs.writeFileSync(outputFilePath, pdfBytes);
+	}
+
+	funcPass(fn, reason, body) {
+		const maxIntentos = 3;
+		let intentos = 0;
+
+		const pass = body.pass ? body.pass : '123456789';
+
+		if (intentos >= maxIntentos) {
+			throw new Error('Maximo de intentos alcanzado');
+		}
+
+		intentos++;
+
+		fn(pass);
+		return '';
 	}
 }
