@@ -10,9 +10,10 @@ import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { readPdfText } from 'pdf-text-reader';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { customResponse } from '../common/response';
-import { ArchivoPDFDto, OCRDto, PdfBase64Dto } from '../dtos/ocr.dto';
+import { ArchivoPDFDto, Base64FacturaDto, OCRDto, PdfBase64Dto } from '../dtos/ocr.dto';
 import * as fs from 'fs';
 import { PDFDocument } from 'pdf-lib';
+import AdmZip from 'adm-zip';
 
 @Controller('OCR')
 @ApiTags('OCR')
@@ -20,17 +21,11 @@ export class PdfServiceController {
 	@Post('convertPDF')
 	@ApiOperation({ summary: 'convert PDF to Text' })
 	async pdfToText(@Body() body: OCRDto) {
-		console.log(body);
-
 		if (body.ruta.includes('public')) {
 			body.ruta = body.ruta.split('public/')[1];
 		}
 
-		console.log(body.ruta);
-
 		const url = process.env.LARAVEL_URL + '/' + body.ruta;
-
-		console.log(url);
 
 		const promises = [];
 		body.files.forEach(element => {
@@ -44,22 +39,12 @@ export class PdfServiceController {
 			try {
 				const data = response[index][0]['lines'];
 
-				console.log(data);
-
 				// const rucCliente = data.find((line: string) => line.startsWith(': '));
 				const ruc = data.find((line: string) => line.includes('RUC:'));
 				const serie = data.find((line: string) => line.includes('E001-'));
 				// buscar cualquiera con esta coincidencia exacta dd/mm/yyyy usando regex
 				const fecha = data.find((line: string) => /\d{2}\/\d{2}\/\d{4}/.test(line));
 				const importeTotal = data.find((line: string) => line.includes('Importe Total :'));
-
-				console.log({
-					// rucCliente,
-					ruc,
-					serie,
-					fecha,
-					importeTotal,
-				});
 
 				return {
 					// rucCliente: rucCliente.split(':')[1].trim(),
@@ -87,6 +72,77 @@ export class PdfServiceController {
 				};
 			}
 		});
+
+		return customResponse('pdf', dataDepurada);
+	}
+
+	@Post('base64Factura')
+	@ApiOperation({ summary: 'convert PDF to Text' })
+	async base64Factura(@Body() body: Base64FacturaDto) {
+		const tiempo = Date.now();
+		const pathArchivo = __dirname + '/temp/' + tiempo + '.zip';
+		const pathDescomprimir = __dirname + '/temp/' + tiempo + '/';
+		const base64Data = body.archivoBase64.replace(/^data:application\/zip;base64,/, '');
+
+		fs.writeFileSync(pathArchivo, base64Data, 'base64');
+
+		const zip = new AdmZip(pathArchivo);
+
+		zip.extractAllTo(pathDescomprimir, true);
+
+		const files = fs.readdirSync(pathDescomprimir);
+
+		const promises = [];
+
+		files.forEach(element => {
+			const fileUrl = pathDescomprimir + element;
+			promises.push({ fileName: element, promise: readPdfText(fileUrl) });
+		});
+
+		const response = await Promise.all(promises.map(p => p.promise));
+
+		const dataDepurada = promises.map((element, index) => {
+			try {
+				const data = response[index][0]['lines'];
+
+				// const rucCliente = data.find((line: string) => line.startsWith(': '));
+				const ruc = data.find((line: string) => line.includes('RUC:'));
+				const serie = data.find((line: string) => line.includes('E001-'));
+				// buscar cualquiera con esta coincidencia exacta dd/mm/yyyy usando regex
+				const fecha = data.find((line: string) => /\d{2}\/\d{2}\/\d{4}/.test(line));
+				const importeTotal = data.find((line: string) => line.includes('Importe Total :'));
+
+				return {
+					// rucCliente: rucCliente.split(':')[1].trim(),
+					rucCliente: '',
+					fileName: element.fileName,
+					ruc: ruc.split(':')[1].trim(),
+					serie: serie.split('-')[1].trim(),
+					fecha,
+					importeTotal: importeTotal
+						.split(':')[1]
+						.trim()
+						.replaceAll(',', '')
+						.replace('S/', '')
+						.trim(),
+				};
+			} catch (error) {
+				console.log(error);
+				return {
+					fileName: element.fileName,
+					rucCliente: '',
+					ruc: '',
+					serie: '',
+					fecha: '',
+					importeTotal: '',
+				};
+			}
+		});
+
+		fs.unlinkSync(pathArchivo);
+		setTimeout(() => {
+			fs.rmSync(pathDescomprimir, { recursive: true, force: true });
+		}, 1000);
 
 		return customResponse('pdf', dataDepurada);
 	}

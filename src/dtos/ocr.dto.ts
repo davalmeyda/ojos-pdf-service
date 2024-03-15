@@ -22,6 +22,12 @@ export class PdfBase64Dto {
 	pass?: string;
 }
 
+export class Base64FacturaDto {
+	@IsString()
+	@ApiProperty()
+	archivoBase64: string;
+}
+
 export class ArchivoPDFDto {
 	@IsNotEmpty()
 	@ApiProperty({ type: 'string', format: 'binary' })
