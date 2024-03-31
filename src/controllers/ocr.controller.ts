@@ -79,11 +79,14 @@ export class PdfServiceController {
 	@Post('convertPDFDEV')
 	@ApiOperation({ summary: 'convert PDF DEV to Text' })
 	async pdfToTextDev(@Body() body: OCRDto) {
+		console.log(OCRDto);
+
 		if (body.ruta.includes('public')) {
 			body.ruta = body.ruta.split('public/')[1];
 		}
 
 		const url = "http://dev.manoturqueza.com" + '/' + body.ruta;
+		
 		console.log(url);
 
 		const promises = [];
