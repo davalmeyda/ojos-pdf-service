@@ -85,7 +85,7 @@ export class PdfServiceController {
 			body.ruta = body.ruta.split('public/')[1];
 		}
 
-		const url = "http://dev.manoturqueza.com" + '/' + body.ruta;
+		const url = "https://dev.manoturqueza.com" + '/' + body.ruta;
 		
 		console.log(url);
 
