@@ -76,6 +76,64 @@ export class PdfServiceController {
 		return customResponse('pdf', dataDepurada);
 	}
 
+	@Post('convertPDFDEV')
+	@ApiOperation({ summary: 'convert PDF DEV to Text' })
+	async pdfToTextDev(@Body() body: OCRDto) {
+		if (body.ruta.includes('public')) {
+			body.ruta = body.ruta.split('public/')[1];
+		}
+
+		const url = "http://dev.manoturqueza.com" + '/' + body.ruta;
+
+		const promises = [];
+		body.files.forEach(element => {
+			const fileUrl = url + '/' + element;
+			promises.push({ fileName: element, promise: readPdfText(fileUrl) });
+		});
+
+		const response = await Promise.all(promises.map(p => p.promise));
+
+		const dataDepurada = promises.map((element, index) => {
+			try {
+				const data = response[index][0]['lines'];
+
+				// const rucCliente = data.find((line: string) => line.startsWith(': '));
+				const ruc = data.find((line: string) => line.includes('RUC:'));
+				const serie = data.find((line: string) => line.includes('E001-'));
+				// buscar cualquiera con esta coincidencia exacta dd/mm/yyyy usando regex
+				const fecha = data.find((line: string) => /\d{2}\/\d{2}\/\d{4}/.test(line));
+				const importeTotal = data.find((line: string) => line.includes('Importe Total :'));
+
+				return {
+					// rucCliente: rucCliente.split(':')[1].trim(),
+					rucCliente: '',
+					fileName: element.fileName,
+					ruc: ruc.split(':')[1].trim(),
+					serie: serie.split('-')[1].trim(),
+					fecha,
+					importeTotal: importeTotal
+						.split(':')[1]
+						.trim()
+						.replaceAll(',', '')
+						.replace('S/', '')
+						.trim(),
+				};
+			} catch (error) {
+				console.log(error);
+				return {
+					fileName: element.fileName,
+					rucCliente: '',
+					ruc: '',
+					serie: '',
+					fecha: '',
+					importeTotal: '',
+				};
+			}
+		});
+
+		return customResponse('pdf', dataDepurada);
+	}
+
 	@Post('base64Factura')
 	@ApiOperation({ summary: 'convert PDF to Text' })
 	async base64Factura(@Body() body: Base64FacturaDto) {
