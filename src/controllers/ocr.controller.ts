@@ -84,6 +84,7 @@ export class PdfServiceController {
 		}
 
 		const url = "http://dev.manoturqueza.com" + '/' + body.ruta;
+		console.log(url);
 
 		const promises = [];
 		body.files.forEach(element => {
