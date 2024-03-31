@@ -92,6 +92,7 @@ export class PdfServiceController {
 		const promises = [];
 		body.files.forEach(element => {
 			const fileUrl = url + '/' + element;
+			console.log(fileUrl);
 			promises.push({ fileName: element, promise: readPdfText(fileUrl) });
 		});
 
