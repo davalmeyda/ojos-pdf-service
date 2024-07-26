@@ -85,8 +85,8 @@ export class PdfServiceController {
 			body.ruta = body.ruta.split('public/')[1];
 		}
 
-		const url = "https://dev.manoturqueza.com" + '/' + body.ruta;
-		
+		const url = 'https://dev.manoturqueza.com' + '/' + body.ruta;
+
 		console.log(url);
 
 		const promises = [];
@@ -264,8 +264,14 @@ export class PdfServiceController {
 			fs.unlinkSync(pathArchivo);
 			fs.unlinkSync(fileOut);
 
-			// al array total le quito los elementos que estan en el array salida
-			const respTotalFiltrado = respTotal.filter(element => !respSalida.includes(element));
+			// Crear un nuevo array filtrado removiendo solo una coincidencia de cada elemento en respSalida
+			const respTotalFiltrado = [...respTotal];
+			respSalida.forEach(salida => {
+				const index = respTotalFiltrado.indexOf(salida);
+				if (index > -1) {
+					respTotalFiltrado.splice(index, 1);
+				}
+			});
 
 			return {
 				salidas: respSalida.filter(element => {
@@ -360,8 +366,14 @@ export class PdfServiceController {
 			respTotal.push(...linesWithCurrency);
 		});
 
-		// al array total le quito los elementos que estan en el array salida
-		const respTotalFiltrado = respTotal.filter(element => !respSalida.includes(element));
+		// Crear un nuevo array filtrado removiendo solo una coincidencia de cada elemento en respSalida
+		const respTotalFiltrado = [...respTotal];
+		respSalida.forEach(salida => {
+			const index = respTotalFiltrado.indexOf(salida);
+			if (index > -1) {
+				respTotalFiltrado.splice(index, 1);
+			}
+		});
 
 		return {
 			salidas: respSalida.filter(element => {
